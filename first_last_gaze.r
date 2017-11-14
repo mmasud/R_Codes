@@ -1,8 +1,58 @@
 
+rm(list= ls())
+
+# Loading the library
+
+library(tidyverse)
+library(readxl)
+
+# Load the data
+
+path = "C:/Users/mpez/Documents/Projects/GFK-Norm"
+setwd(path)
+
+data <- read_excel("GfK Norm FullData.xlsx")
+data <- as.data.frame(data)
+data <- data[which(!is.na(data$`Time to First Fixation`)),]
+
 # Calculate the percentage of first and last gaze points.
 
+  
+Min_gaze <- data %>%
+  group_by(Stores, Participants) %>%
+  summarise(AOI_min = AOI[which.min(`Time to First Fixation`)])
+
+
+#a <- aggregate(`Time to First Fixation` ~ Stores+ Participants, data= data, FUN = min, na.action = na.omit)
+
+
+AOI_reach <- Min_gaze %>%
+  group_by(Stores) %>%
+  mutate(GrpCount =n())%>%
+  group_by(Stores, AOI_min, GrpCount) %>%
+  summarise(Count = n(), percentage = round((Count/GrpCount[1L])*100 , 2))%>%
+  arrange(Stores, desc(Count))
+
+second_data <- data %>%
+  select (Stores, Participants, AOI, `Time to First Fixation`) %>%
+  group_by(Stores, Participants) %>%
+  summarize(AOI_2nd = AOI[sort(`Time to First Fixation`, index.return  = T)$ix[2]])
+
+AOI_reach_2nd <- second_data %>%
+  group_by(Stores) %>%
+  mutate(GrpCount =n())%>%
+  group_by(Stores, AOI_2nd, GrpCount) %>%
+  summarise(Count = n(), percentage = round((Count/GrpCount[1L])*100 , 2))%>%
+  arrange(Stores, desc(Count))
+
+#################
+
+
+  
+  
+
 Min_data <- data %>%
-            select (Shelfs, Participants, AOI, `Time To First Fixation`, `First Fixation Duration`) %>%
+            select (Data[1], Participants, AOI, `Time To First Fixation`, `First Fixation Duration`) %>%
             group_by(Shelfs, Participants) %>%
             summarize(AOI_min = AOI[which.min(`Time To First Fixation`)], Fixation_Duration_first = `First Fixation Duration`[which.min(`Time To First Fixation`)],
 
@@ -64,8 +114,7 @@ last_point<- Min_data %>%
             summarize(count = n(), percentage = round(((count/30)*100), digits = 2))%>%
             arrange(Shelfs, desc(count))
 
-write.csv(first_point, file = "First_gaze.csv",row.names=FALSE)
+
+write.csv(AOI_reach_2nd, file = "Second_gaze.csv",row.names=FALSE)
 write.csv(last_point, file = "Last_gaze.csv",row.names=FALSE)
 
-
-sort(x  , partial = n-1)[n-1]
